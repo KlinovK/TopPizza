@@ -7,7 +7,6 @@
 
 import Foundation
 
-
 struct KeychainHelper {
     static let service = "com.example.TopPizzaApp"
     
@@ -26,7 +25,7 @@ struct KeychainHelper {
             kSecValueData as String: dataEncoded
         ]
         
-        SecItemDelete(query as CFDictionary) // Remove existing item if any
+        SecItemDelete(query as CFDictionary)
         let status = SecItemAdd(query as CFDictionary, nil)
         if status == errSecSuccess {
             print("Keychain: Saved user '\(username)' with deviceUUID '\(deviceUUID)'")

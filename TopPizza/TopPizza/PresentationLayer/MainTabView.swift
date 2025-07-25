@@ -20,7 +20,6 @@ struct MainTabView: View {
                 .tabItem { Label("Basket", systemImage: "cart") }
         }
         .toolbar(.hidden, for: .navigationBar)
-        .disabled(true)
     }
 }
 

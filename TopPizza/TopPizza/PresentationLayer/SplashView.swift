@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct SplashView: View {
+    
     @State private var isActive = false
     
     var body: some View {
@@ -16,7 +17,7 @@ struct SplashView: View {
                 AuthView()
             } else {
                 ZStack {
-                    Color("MainColor")
+                    Color(Constants.Colors.mainColor)
                         .ignoresSafeArea()
                     Image("ic_logo_white")
                         .resizable()

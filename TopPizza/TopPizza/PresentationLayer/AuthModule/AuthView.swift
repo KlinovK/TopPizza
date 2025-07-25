@@ -15,99 +15,104 @@ struct AuthView: View {
     @State private var isLoggedIn = false
     @State private var errorMessage: String?
     @State private var isPasswordVisible = false
-    @StateObject private var keyboard = KeyboardResponder()
     @State private var showBanner = false
+    @State private var bannerType: BannerType = .error
 
-    private let presenter = AuthPresenter()
+    @StateObject private var keyboard = KeyboardResponder()
+
+    private let presenter: AuthPresenterProtocol
+    
+    init(presenter: AuthPresenterProtocol = AuthPresenter()) {
+        self.presenter = presenter
+    }
 
     var body: some View {
         NavigationStack {
             ZStack(alignment: .top) {
-                Color("MainBackground")
+                Color(Constants.Colors.mainBackground)
                     .ignoresSafeArea()
 
                 VStack {
-                    Image("ic_logo_purple")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 322, height: 101)
-                        .padding(.top)
+                    Spacer()
 
-                    // Username Field
-                    HStack {
-                        Image(systemName: "person.fill")
-                            .foregroundColor(.gray)
-                        ZStack(alignment: .leading) {
-                            if username.isEmpty {
-                                Text("Username")
-                                    .foregroundColor(Color("BorderColor"))
-                            }
-                            TextField("", text: $username)
-                                .autocapitalization(.none)
-                                .disableAutocorrection(true)
-                                .foregroundColor(.black)
-                        }
-                    }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(20)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color("BorderColor"), lineWidth: 1)
-                    )
-                    .padding(.horizontal)
+                    VStack(spacing: 20) {
+                        Image("ic_logo_purple")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 322, height: 101)
 
-                    // Password Field
-                    HStack {
-                        Image(systemName: "lock.fill")
-                            .foregroundColor(.gray)
-                        ZStack(alignment: .leading) {
-                            if password.isEmpty {
-                                Text("Password")
-                                    .foregroundColor(Color("BorderColor"))
-                            }
-                            if isPasswordVisible {
-                                TextField("", text: $password)
-                                    .autocapitalization(.none)
-                                    .disableAutocorrection(true)
-                                    .foregroundColor(.black)
-                            } else {
-                                SecureField("", text: $password)
+                        HStack {
+                            Image(systemName: "person.fill")
+                                .foregroundColor(.gray)
+                            ZStack(alignment: .leading) {
+                                if username.isEmpty {
+                                    Text("Username")
+                                        .foregroundColor(Color(Constants.Colors.borderColor))
+                                }
+                                TextField("", text: $username)
                                     .autocapitalization(.none)
                                     .disableAutocorrection(true)
                                     .foregroundColor(.black)
                             }
                         }
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(20)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color(Constants.Colors.borderColor), lineWidth: 1)
+                        )
+                        .padding(.horizontal)
+
+                        HStack {
+                            Image(systemName: "lock.fill")
+                                .foregroundColor(.gray)
+                            ZStack(alignment: .leading) {
+                                if password.isEmpty {
+                                    Text("Password")
+                                        .foregroundColor(Color(Constants.Colors.borderColor))
+                                }
+                                if isPasswordVisible {
+                                    TextField("", text: $password)
+                                        .autocapitalization(.none)
+                                        .disableAutocorrection(true)
+                                        .foregroundColor(.black)
+                                } else {
+                                    SecureField("", text: $password)
+                                        .autocapitalization(.none)
+                                        .disableAutocorrection(true)
+                                        .foregroundColor(.black)
+                                }
+                            }
+
+                            Button(action: {
+                                isPasswordVisible.toggle()
+                            }) {
+                                Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(20)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color(Constants.Colors.borderColor), lineWidth: 1)
+                        )
+                        .padding(.horizontal)
 
                         Button(action: {
-                            isPasswordVisible.toggle()
+                            isSignUpMode.toggle()
                         }) {
-                            Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
-                                .foregroundColor(.gray)
+                            Text(isSignUpMode ? "Switch to Log In" : "Switch to Sign Up")
+                                .foregroundColor(.blue)
+                                .font(.custom(Constants.Font.defaultFontRegular, size: 16))
                         }
                     }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(20)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color("BorderColor"), lineWidth: 1)
-                    )
-                    .padding(.horizontal)
-
-                    // Mode switch
-                    Button(action: {
-                        isSignUpMode.toggle()
-                    }) {
-                        Text(isSignUpMode ? "Switch to Log In" : "Switch to Sign Up")
-                            .foregroundColor(.blue)
-                            .font(.custom("SFUIDisplay-Regular", size: 16))
-                    }
-                    .padding(.vertical)
 
                     Spacer()
                 }
-                .font(.custom("SFUIDisplay-Regular", size: 16))
+                .font(.custom(Constants.Font.defaultFontRegular, size: 16))
                 .padding()
                 .navigationTitle(isSignUpMode ? "Sign Up" : "Log In")
                 .navigationBarTitleDisplayMode(.inline)
@@ -115,7 +120,6 @@ struct AuthView: View {
                     MainTabView()
                 }
 
-                // Bottom action button
                 VStack {
                     Spacer()
                     ZStack {
@@ -125,58 +129,42 @@ struct AuthView: View {
 
                         Button(action: {
                             let deviceUUID = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
-                            let result: Result<Bool, AuthError>
-
-                            if isSignUpMode {
-                                result = presenter.signUp(username: username, password: password, deviceUUID: deviceUUID)
-                            } else {
-                                result = presenter.logIn(username: username, password: password)
-                            }
-
-                            switch result {
-                            case .success(let success):
-                                isLoggedIn = success
-                                errorMessage = nil
-                                showBanner = false
-                                if !success {
-                                    errorMessage = "No user found with these credentials."
+                            presenter.authenticate(
+                                username: username,
+                                password: password,
+                                isSignUp: isSignUpMode,
+                                deviceUUID: deviceUUID
+                            ) { success, message, type in
+                                if success {
+                                    isLoggedIn = true
+                                } else {
+                                    errorMessage = message
+                                    bannerType = type
                                     showTopBanner()
                                 }
-                            case .failure(let error):
-                                errorMessage = error.errorDescription
-                                showTopBanner()
                             }
                         }) {
                             Text(isSignUpMode ? "Sign Up" : "Log In")
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background((username.isEmpty || password.isEmpty) ? Color("DisabledButtonColor").opacity(0.4) : Color("MainColor"))
+                                .background((username.isEmpty || password.isEmpty) ? Color(Constants.Colors.disabledButtonColor).opacity(0.4) : Color(Constants.Colors.mainColor))
                                 .foregroundColor(.white)
                                 .cornerRadius(20)
-                                .font(.custom("SFUIDisplay-Regular", size: 16))
+                                .font(.custom(Constants.Font.defaultFontRegular, size: 16))
                         }
                         .disabled(username.isEmpty || password.isEmpty)
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 20)
                     }
                     .padding(.bottom, keyboard.currentHeight)
                     .animation(.easeOut(duration: 0.25), value: keyboard.currentHeight)
                 }
                 .ignoresSafeArea(edges: .bottom)
 
-                if showBanner, let message = errorMessage {
-                    Text(message)
-                        .foregroundColor(.white)
-                        .font(.custom("SFUIDisplay-Regular", size: 14))
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.red)
-                        .cornerRadius(10)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 50)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                        .animation(.spring(), value: showBanner)
-                }
+                BannerView(
+                    message: errorMessage ?? "",
+                    type: bannerType,
+                    show: $showBanner
+                )
             }
         }
     }
@@ -194,3 +182,4 @@ struct AuthView: View {
 #Preview {
     AuthView()
 }
+
